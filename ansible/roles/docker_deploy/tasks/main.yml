@@ -13,6 +13,13 @@
     src: "docker/docker-compose.certbot.yml.j2"
     dest: "{{ ansible_env.HOME }}/docker-compose.certbot.yml"
     mode: "0644"
+    
+- name: Create 'monitoring' network if it does not exist
+  become: true # Escalate if necessary for Docker commands
+  ansible.builtin.command: docker network create monitoring
+  register: network_creation
+  failed_when: network_creation.rc != 0 and 'already exists' not in network_creation.stderr
+  ignore_errors: yes
 
 - name: Determine the primary domain
   set_fact:
