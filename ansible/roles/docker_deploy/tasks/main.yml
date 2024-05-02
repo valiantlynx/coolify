@@ -7,54 +7,8 @@
   ansible.builtin.debug:
     var: cloudflare_zone_ids
 
-# Ensure directories exist
-- name: Generate Docker Compose file for certbot with dynamic domain names
-  ansible.builtin.template:
-    src: "docker/docker-compose.certbot.yml.j2"
-    dest: "{{ ansible_env.HOME }}/docker-compose.certbot.yml"
-    mode: "0644"
-    
-- name: Create 'monitoring' network if it does not exist
-  become: true # Escalate if necessary for Docker commands
-  ansible.builtin.command: docker network create monitoring
-  register: network_creation
-  failed_when: network_creation.rc != 0 and 'already exists' not in network_creation.stderr
-  ignore_errors: yes
-
-- name: Determine the primary domain
-  set_fact:
-    primary_domain: "{{ cloudflare_zone_ids.keys() | list | first }}"
-
-- name: Check if SSL certificate needs renewal for the primary domain
-  ansible.builtin.command: >
-    openssl x509 -checkend 864000 -noout -in {{ ansible_env.HOME }}/certbot/conf/live/{{ primary_domain }}/fullchain.pem
-  register: cert_check
-  failed_when: cert_check.rc > 1
-  ignore_errors: yes
-
-- name: Debug primary_domain variable content
-  ansible.builtin.debug:
-    var: primary_domain
-
-- name: Obtain SSL certificates with Certbot if needed
-  command: docker-compose -f docker-compose.certbot.yml run --rm certbot
+- name: Install Coolify
   become: true
+  shell: curl -fsSL https://cdn.coollabs.io/coolify/install.sh | bash
   args:
-    chdir: "{{ ansible_env.HOME }}/"
-  when: cert_check.rc == 1
-
-- name: Delete all hanging stuff
-  command: docker system prune -a -f --volumes
-  become: true
-  args:
-    chdir: "{{ ansible_env.HOME }}/"
-
-- name: Schedule automated certificate renewal
-  ansible.builtin.cron:
-    name: "Renew Let's Encrypt certificates"
-    day: "1"
-    month: "*/2"
-    hour: "5"
-    minute: "0"
-    job: "cd {{ ansible_env.HOME }} && docker-compose run --rm certbot renew && docker-compose exec nginx nginx -s reload"
-    user: ubuntu
+    executable: /bin/bash
