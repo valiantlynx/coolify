@@ -3,10 +3,11 @@
 namespace App\Notifications\Server;
 
 use App\Models\Server;
-use Illuminate\Bus\Queueable;
 use App\Notifications\Channels\DiscordChannel;
 use App\Notifications\Channels\EmailChannel;
 use App\Notifications\Channels\TelegramChannel;
+use App\Notifications\Dto\DiscordMessage;
+use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -16,9 +17,8 @@ class ForceEnabled extends Notification implements ShouldQueue
     use Queueable;
 
     public $tries = 1;
-    public function __construct(public Server $server)
-    {
-    }
+
+    public function __construct(public Server $server) {}
 
     public function via(object $notifiable): array
     {
@@ -36,28 +36,34 @@ class ForceEnabled extends Notification implements ShouldQueue
         if ($isTelegramEnabled) {
             $channels[] = TelegramChannel::class;
         }
+
         return $channels;
     }
 
     public function toMail(): MailMessage
     {
-        $mail = new MailMessage();
+        $mail = new MailMessage;
         $mail->subject("Coolify: Server ({$this->server->name}) enabled again!");
         $mail->view('emails.server-force-enabled', [
             'name' => $this->server->name,
         ]);
+
         return $mail;
     }
 
-    public function toDiscord(): string
+    public function toDiscord(): DiscordMessage
     {
-        $message = "Coolify: Server ({$this->server->name}) enabled again!";
-        return $message;
+        return new DiscordMessage(
+            title: ':white_check_mark: Server enabled',
+            description: "Server '{$this->server->name}' enabled again!",
+            color: DiscordMessage::successColor(),
+        );
     }
+
     public function toTelegram(): array
     {
         return [
-            "message" => "Coolify: Server ({$this->server->name}) enabled again!"
+            'message' => "Coolify: Server ({$this->server->name}) enabled again!",
         ];
     }
 }

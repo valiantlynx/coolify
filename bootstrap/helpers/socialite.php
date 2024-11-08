@@ -7,13 +7,14 @@ function get_socialite_provider(string $provider)
 {
     $oauth_setting = OauthSetting::firstWhere('provider', $provider);
 
-    if ($provider == 'azure') {
+    if ($provider === 'azure') {
         $azure_config = new \SocialiteProviders\Manager\Config(
             $oauth_setting->client_id,
             $oauth_setting->client_secret,
             $oauth_setting->redirect_uri,
             ['tenant' => $oauth_setting->tenant],
-          );
+        );
+
         return Socialite::driver('azure')->setConfig($azure_config);
     }
 

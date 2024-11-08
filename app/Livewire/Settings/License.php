@@ -9,29 +9,37 @@ use Livewire\Component;
 class License extends Component
 {
     public InstanceSettings $settings;
-    public string|null $instance_id = null;
+
+    public ?string $instance_id = null;
 
     protected $rules = [
         'settings.resale_license' => 'nullable',
         'settings.is_resale_license_active' => 'nullable',
     ];
+
     protected $validationAttributes = [
         'settings.resale_license' => 'License',
         'instance_id' => 'Instance Id (Do not change this)',
         'settings.is_resale_license_active' => 'Is License Active',
     ];
 
-    public function mount () {
-        if (!isCloud()) {
+    public function mount()
+    {
+        if (! isCloud()) {
             abort(404);
         }
+        if (! isInstanceAdmin()) {
+            return redirect()->route('home');
+        }
         $this->instance_id = config('app.id');
-        $this->settings = InstanceSettings::get();
+        $this->settings = instanceSettings();
     }
+
     public function render()
     {
         return view('livewire.settings.license');
     }
+
     public function submit()
     {
         $this->validate();
@@ -41,8 +49,8 @@ class License extends Component
                 CheckResaleLicense::run();
                 $this->dispatch('reloadWindow');
             } catch (\Throwable $e) {
-                session()->flash('error', 'Something went wrong. Please contact support. <br>Error: ' . $e->getMessage());
-                ray($e->getMessage());
+                session()->flash('error', 'Something went wrong. Please contact support. <br>Error: '.$e->getMessage());
+
                 return redirect()->route('settings.license');
             }
         }

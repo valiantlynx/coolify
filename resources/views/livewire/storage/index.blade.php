@@ -1,7 +1,10 @@
 <div>
+    <x-slot:title>
+        Storages | Coolify
+    </x-slot>
     <div class="flex items-start gap-2">
         <h1>S3 Storages</h1>
-        <x-modal-input buttonTitle="+ Add" title="New S3 Storage">
+        <x-modal-input buttonTitle="+ Add" title="New S3 Storage" :closeOutside="false">
             <livewire:storage.create />
         </x-modal-input>
     </div>
@@ -14,7 +17,11 @@
                         {{ $storage->name }}
                     </div>
                     <div class="box-description">
-                        {{ $storage->description }}</div>
+                        {{ $storage->description }}
+                    </div>
+                    @if (!$storage->is_usable)
+                        <div class="text-red-500">Not Usable</div>
+                @endif
                 </div>
             </div>
         @empty

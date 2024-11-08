@@ -2,21 +2,34 @@
 
 namespace App\Providers;
 
+use App\Models\PersonalAccessToken;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 use Laravel\Sanctum\Sanctum;
-use App\Models\PersonalAccessToken;
 
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        if ($this->app->environment('local')) {
+            $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
+        }
     }
 
     public function boot(): void
     {
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
-        Http::macro('github', function (string $api_url, string|null $github_access_token = null) {
+
+        Password::defaults(function () {
+            $rule = Password::min(8);
+
+            return $this->app->isProduction()
+                ? $rule->mixedCase()->letters()->numbers()->symbols()
+                : $rule;
+        });
+
+        Http::macro('github', function (string $api_url, ?string $github_access_token = null) {
             if ($github_access_token) {
                 return Http::withHeaders([
                     'X-GitHub-Api-Version' => '2022-11-28',
